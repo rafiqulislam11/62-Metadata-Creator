@@ -1004,6 +1004,9 @@ window.DEFAULT_PORTRAIT_LOGO = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
                                 <span class="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                     Ready: <strong id="mini-stat-ready" class="text-emerald-600 dark:text-emerald-400 font-black">0</strong>
                                 </span>
+                                <span id="mini-stat-status-badge" class="hidden px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 font-black flex items-center gap-1 shadow-2xs">
+                                    <i class="fa-solid fa-circle-check text-emerald-500"></i> Upload Completed (১০০%)
+                                </span>
                             </div>
                         </div>
 
@@ -1192,35 +1195,66 @@ window.DEFAULT_PORTRAIT_LOGO = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
                             </div>
                         </div>
 
-                        <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-1 text-sm group-hover:scale-105 transition-transform shadow-xs">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <!-- INITIAL EMPTY STATE -->
+                        <div id="dropzone-initial-view">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-1 text-sm group-hover:scale-105 transition-transform shadow-xs">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                            </div>
+
+                            <h2 class="text-xs font-black text-slate-900 dark:text-white">Choose or Drop Files into Workspace</h2>
+
+                            <div class="flex flex-wrap items-center justify-center gap-1.5 my-2 relative z-20">
+                                <button type="button" onclick="triggerFilteredUpload('image', event)" class="px-2.5 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-xs text-xs flex items-center transition-transform active:scale-95 cursor-pointer">
+                                    <i class="fa-regular fa-image mr-1"></i> Images
+                                </button>
+                                <button type="button" onclick="triggerFilteredUpload('vector', event)" class="px-2.5 py-0.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-xs text-xs flex items-center transition-transform active:scale-95 cursor-pointer">
+                                    <i class="fa-solid fa-bezier-curve mr-1"></i> Vectors (.SVG, .EPS)
+                                </button>
+                                <button type="button" onclick="triggerFilteredUpload('video', event)" class="px-2.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-xs text-xs flex items-center transition-transform active:scale-95 cursor-pointer">
+                                    <i class="fa-solid fa-play mr-1"></i> Videos (.MP4)
+                                </button>
+                            </div>
+
+                            <div class="my-1.5 flex items-center justify-center text-slate-300 dark:text-slate-700">
+                                <div class="h-px border-t border-dashed border-slate-300 dark:border-slate-700 w-12 sm:w-20"></div>
+                                <span class="mx-2 text-[10px] font-semibold text-slate-500 flex items-center">
+                                    <i class="fa-solid fa-paste mr-1 text-indigo-500"></i> Press Ctrl+V to Paste Images
+                                </span>
+                                <div class="h-px border-t border-dashed border-slate-300 dark:border-slate-700 w-12 sm:w-20"></div>
+                            </div>
+
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                                Files are processed client-side. EXIF data & visual attributes extracted instantly with zero privacy leaks.
+                            </p>
                         </div>
 
-                        <h2 class="text-xs font-black text-slate-900 dark:text-white">Choose or Drop Files into Workspace</h2>
-
-                        <div class="flex flex-wrap items-center justify-center gap-1.5 my-2 relative z-20">
-                            <button type="button" onclick="triggerFilteredUpload('image', event)" class="px-2.5 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-xs text-xs flex items-center transition-transform active:scale-95 cursor-pointer">
-                                <i class="fa-regular fa-image mr-1"></i> Images
-                            </button>
-                            <button type="button" onclick="triggerFilteredUpload('vector', event)" class="px-2.5 py-0.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-xs text-xs flex items-center transition-transform active:scale-95 cursor-pointer">
-                                <i class="fa-solid fa-bezier-curve mr-1"></i> Vectors (.SVG, .EPS)
-                            </button>
-                            <button type="button" onclick="triggerFilteredUpload('video', event)" class="px-2.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-xs text-xs flex items-center transition-transform active:scale-95 cursor-pointer">
-                                <i class="fa-solid fa-play mr-1"></i> Videos (.MP4)
-                            </button>
+                        <!-- UPLOAD COMPLETED VIEW (Active when files are uploaded) -->
+                        <div id="dropzone-completed-view" class="hidden py-1">
+                            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 rounded-xl border border-emerald-500/30 dark:border-emerald-500/40">
+                                <div class="flex items-center space-x-3 text-left">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-base shadow-md shadow-emerald-500/20 shrink-0">
+                                        <i class="fa-solid fa-circle-check animate-pulse text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs sm:text-sm font-black text-emerald-800 dark:text-emerald-300">✅ Upload Completed! (১০০% আপলোড সম্পন্ন)</span>
+                                            <span id="dropzone-completed-badge" class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black">1 Asset Ready</span>
+                                        </div>
+                                        <p id="dropzone-completed-sub" class="text-[10.5px] text-slate-600 dark:text-slate-300 font-medium">
+                                            ফাইলগুলো সফলভাবে ওয়ার্কস্পেসে যুক্ত হয়েছে। নিচে Meta Generator বাটনে ক্লিক করুন।
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2 shrink-0" onclick="event.stopPropagation()">
+                                    <button type="button" onclick="document.getElementById('file-input').click()" class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs border border-slate-300 dark:border-slate-600 shadow-xs cursor-pointer flex items-center gap-1.5">
+                                        <i class="fa-solid fa-plus text-indigo-600"></i> আরও ফাইল যোগ করুন
+                                    </button>
+                                    <button type="button" onclick="regenerateCurrentWithAI()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black text-xs shadow-md shadow-indigo-500/25 cursor-pointer flex items-center gap-1.5 ring-1 ring-indigo-400/40">
+                                        <i class="fa-solid fa-wand-magic-sparkles text-yellow-300"></i> Meta Generator রান করুন
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-
-                        <div class="my-1.5 flex items-center justify-center text-slate-300 dark:text-slate-700">
-                            <div class="h-px border-t border-dashed border-slate-300 dark:border-slate-700 w-12 sm:w-20"></div>
-                            <span class="mx-2 text-[10px] font-semibold text-slate-500 flex items-center">
-                                <i class="fa-solid fa-paste mr-1 text-indigo-500"></i> Press Ctrl+V to Paste Images
-                            </span>
-                            <div class="h-px border-t border-dashed border-slate-300 dark:border-slate-700 w-12 sm:w-20"></div>
-                        </div>
-
-                        <p class="text-[10px] text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                            Files are processed client-side. EXIF data & visual attributes extracted instantly with zero privacy leaks.
-                        </p>
                     </div>
 
                     <!-- INSTANT DEMO SAMPLE BUTTONS -->
@@ -2444,30 +2478,32 @@ const modelDisplayNames = {
             // Start ambient flight loop
             initSparrowAutoFlight();
 
-            // Dropzone setup
-            const dropzone = document.getElementById('dropzone-area');
-            if (dropzone) {
+            // Dropzone setup with full card drag & drop support
+            const dropzoneCard = document.getElementById('upload-dropzone-card');
+            const dropzoneArea = document.getElementById('dropzone-area');
+            [dropzoneCard, dropzoneArea].filter(Boolean).forEach(el => {
                 ['dragenter', 'dragover'].forEach(evt => {
-                    dropzone.addEventListener(evt, e => {
+                    el.addEventListener(evt, e => {
                         e.preventDefault();
                         e.stopPropagation();
-                        dropzone.classList.add('ring-4', 'ring-blue-400/40');
+                        if (dropzoneArea) dropzoneArea.classList.add('ring-4', 'ring-emerald-400/40');
                     });
                 });
                 ['dragleave', 'drop'].forEach(evt => {
-                    dropzone.addEventListener(evt, e => {
+                    el.addEventListener(evt, e => {
                         e.preventDefault();
                         e.stopPropagation();
-                        dropzone.classList.remove('ring-4', 'ring-blue-400/40');
+                        if (dropzoneArea) dropzoneArea.classList.remove('ring-4', 'ring-emerald-400/40');
                     });
                 });
-                dropzone.addEventListener('drop', e => {
+                el.addEventListener('drop', e => {
                     const droppedFiles = e.dataTransfer?.files;
                     if (droppedFiles && droppedFiles.length > 0) {
+                        toggleDropzoneCard(true);
                         processUploadedFileList(droppedFiles);
                     }
                 });
-            }
+            });
 
             // Global window drag protection
             window.addEventListener('dragover', e => e.preventDefault());
@@ -2882,7 +2918,7 @@ const modelDisplayNames = {
             };
         }
 
-        async function createVideoBadgeThumbnail(filename) {
+        function createVideoBadgeThumbnail(filename) {
             const ext = filename.split('.').pop().toUpperCase();
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
                 <defs>
@@ -3016,10 +3052,13 @@ const modelDisplayNames = {
             }
         }
 
-        // Lightning-Fast Asynchronous File Ingestion with Zero UI Freezing
+        // Lightning-Fast Asynchronous File Ingestion with Guaranteed Upload Completion
         async function processUploadedFileList(fileList) {
             if (!fileList || fileList.length === 0) return;
-            const total = fileList.length;
+            const filesArray = Array.from(fileList);
+            const total = filesArray.length;
+            isBatchCancelled = false;
+            if (typeof appState !== 'undefined') appState.batchCancelRequested = false;
 
             const customPromptText = appState.customPrompt ? (document.getElementById('custom-prompt-input')?.value || '').trim() : '';
             const startTime = performance.now();
@@ -3044,7 +3083,7 @@ const modelDisplayNames = {
             }
 
             // Step 1: Process and display the FIRST file in <10ms for instant user gratification
-            const firstFile = fileList[0];
+            const firstFile = filesArray[0];
             const firstVisual = prepareVisualAssetForAI(firstFile, firstFile.name, true);
             const firstVerified = enforceExactMetadataRules({}, firstFile.name, firstVisual, customPromptText);
 
@@ -3068,17 +3107,17 @@ const modelDisplayNames = {
                 sceneAnalysis: firstVerified.sceneAnalysis
             });
 
-            // Instant workspace selection of file #1 in 0.01 seconds
+            // Instant workspace selection of file #1
             appState.activeFileIndex = startIndex;
             appState.queuePage = Math.floor(startIndex / (appState.queuePageSize || 40));
             selectWorkspaceFile(startIndex);
             renderFileQueueStrip();
             updateDashboardStats();
 
-            // If only 1 file was uploaded, we are done in under 15ms!
+            // If only 1 file was uploaded, keep dropzone open showing the Upload Completed view!
             if (total === 1) {
-                toggleDropzoneCard(false);
-                showNotification(`⚡ "${firstFile.name}" instantly imported in 0.01s!`, 'success');
+                toggleDropzoneCard(true);
+                showNotification(`✅ Upload Completed! "${firstFile.name}" সফলভাবে ওয়ার্কস্পেসে লোড হয়েছে।`, 'success');
                 return;
             }
 
@@ -3090,7 +3129,7 @@ const modelDisplayNames = {
                     break;
                 }
 
-                const f = fileList[i];
+                const f = filesArray[i];
                 const visualAsset = prepareVisualAssetForAI(f, f.name, true);
                 const verified = enforceExactMetadataRules({}, f.name, visualAsset, customPromptText);
 
@@ -3145,12 +3184,12 @@ const modelDisplayNames = {
             }
 
             if (hud) hud.classList.add('hidden');
-            toggleDropzoneCard(false);
+            toggleDropzoneCard(true); // Keep dropzone visible with Upload Completed state!
 
             updateDashboardStats();
             renderFileQueueStrip();
             const totalElapsed = ((performance.now() - startTime) / 1000).toFixed(2);
-            showNotification(`⚡ Turbo Upload: ${total.toLocaleString()} assets imported in ${totalElapsed}s!`, 'success');
+            showNotification(`✅ Upload Completed! ${total.toLocaleString()} টি ফাইল সফলভাবে আপলোড সম্পন্ন হয়েছে (${totalElapsed}s)`, 'success');
         }
 
         async function generateSimulated1000BatchFiles(event) {
@@ -3328,6 +3367,31 @@ const modelDisplayNames = {
             if (document.getElementById('mini-stat-ready')) document.getElementById('mini-stat-ready').innerText = formatted;
             const qCount = document.getElementById('queue-count-label');
             if (qCount) qCount.innerText = `${formatted} asset${count === 1 ? '' : 's'}`;
+
+            // Guaranteed visual synchronization of Upload Completed state
+            const initialView = document.getElementById('dropzone-initial-view');
+            const completedView = document.getElementById('dropzone-completed-view');
+            const completedBadge = document.getElementById('dropzone-completed-badge');
+            const completedSub = document.getElementById('dropzone-completed-sub');
+            const miniStatusBadge = document.getElementById('mini-stat-status-badge');
+            const dropzoneToggleLabel = document.getElementById('dropzone-toggle-label');
+
+            if (count > 0) {
+                if (initialView) initialView.classList.add('hidden');
+                if (completedView) completedView.classList.remove('hidden');
+                if (completedBadge) completedBadge.innerText = `${formatted} File${count === 1 ? '' : 's'} Ready`;
+                if (completedSub) {
+                    const activeName = appState.files[appState.activeFileIndex]?.name || 'ফাইল';
+                    completedSub.innerText = `"${activeName}" ওয়ার্কস্পেসে রেডি আছে। নিচে Meta Generator বাটনে ক্লিক করুন।`;
+                }
+                if (miniStatusBadge) miniStatusBadge.classList.remove('hidden');
+                if (dropzoneToggleLabel) dropzoneToggleLabel.innerText = `Upload Box (${count})`;
+            } else {
+                if (initialView) initialView.classList.remove('hidden');
+                if (completedView) completedView.classList.add('hidden');
+                if (miniStatusBadge) miniStatusBadge.classList.add('hidden');
+                if (dropzoneToggleLabel) dropzoneToggleLabel.innerText = 'Upload Box';
+            }
         }
 
         function toggleDropzoneCard(force) {
@@ -3464,6 +3528,12 @@ const modelDisplayNames = {
 
         function resetWorkspaceToEmpty() {
             appState.activeFileIndex = 0;
+            const initialView = document.getElementById('dropzone-initial-view');
+            const completedView = document.getElementById('dropzone-completed-view');
+            const miniStatusBadge = document.getElementById('mini-stat-status-badge');
+            if (initialView) initialView.classList.remove('hidden');
+            if (completedView) completedView.classList.add('hidden');
+            if (miniStatusBadge) miniStatusBadge.classList.add('hidden');
             const filenameEl = document.getElementById('ws-active-filename');
             if (filenameEl) filenameEl.innerText = 'No file selected';
             const previewEl = document.getElementById('ws-preview-img');
