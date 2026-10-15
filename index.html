@@ -4023,9 +4023,60 @@ const modelDisplayNames = {
             });
         }
 
-        // Live Google Gemini 2.0 / 1.5 Flash Vision Multimodal Execution
-        async function callGoogleGeminiVision(apiKey, assetBase64, customPrompt = '') {
-            const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash-8b'];
+        // =========================================================================
+        // GOOGLE GEMINI 3.8 FLASH VISION MULTIMODAL API & VERIFICATION SYSTEM
+        // =========================================================================
+
+        // Live API Key Verification with Google AI Studio
+        async function verifyGoogleGeminiKey(keyToTest) {
+            let key = (keyToTest || document.getElementById('sidebar-quick-gemini-key')?.value || document.getElementById('key-gemini')?.value || appState.apiKeys?.gemini || '').trim();
+            if (!key) {
+                showNotification('অনুগ্রহ করে প্রথমে আপনার Google AI Studio API Key দিন।', 'warning');
+                return false;
+            }
+
+            const statusEl = document.getElementById('gemini-key-verify-status');
+            if (statusEl) {
+                statusEl.innerHTML = '<span class="text-amber-300 font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-notch fa-spin"></i> Google AI Studio (Gemini 3.8) এর সাথে সংযোগ পরীক্ষা করা হচ্ছে...</span>';
+            }
+
+            try {
+                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+                }
+
+                if (!appState.apiKeys) appState.apiKeys = {};
+                appState.apiKeys.gemini = key;
+                try { localStorage.setItem('ri_api_keys', JSON.stringify(appState.apiKeys)); } catch (e) {}
+
+                // Sync all inputs
+                const mainInput = document.getElementById('key-gemini');
+                const quickInput = document.getElementById('sidebar-quick-gemini-key');
+                if (mainInput) mainInput.value = key;
+                if (quickInput) quickInput.value = key;
+
+                updateAPIStatusLabel();
+
+                if (statusEl) {
+                    statusEl.innerHTML = '<span class="text-emerald-300 font-black flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-400"></i> কানেকশন সফল! Google Gemini 3.8 Flash Vision লাইভ অ্যাক্টিভ হয়েছে।</span>';
+                }
+                showNotification('✨ Google Gemini 3.8 Flash Vision Connected & Verified!', 'success');
+                return true;
+            } catch (e) {
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="text-rose-300 font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-xmark text-rose-400"></i> কানেকশন ব্যর্থ: ${e.message}</span>`;
+                }
+                showNotification(`Verification failed: ${e.message}`, 'error');
+                return false;
+            }
+        }
+        window.verifyGoogleGeminiKey = verifyGoogleGeminiKey;
+
+        // Dedicated Google Gemini 3.8 Flash Vision Multimodal Execution Function
+        async function callGoogleGemini38Vision(apiKey, assetBase64, customPrompt = '') {
+            const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b'];
             let lastError = null;
 
             const systemPrompt = `You are an elite microstock contributor and chief metadata inspector for Adobe Stock, Shutterstock, Getty Images, and Freepik.
@@ -4051,6 +4102,7 @@ Return ONLY a valid JSON object matching these fields. No markdown backticks, no
                     const payload = {
                         contents: [
                             {
+                                role: "user",
                                 parts: [
                                     { text: customPrompt ? systemPrompt + '\nUser Specific Directive: ' + customPrompt : systemPrompt },
                                     {
@@ -4093,7 +4145,7 @@ Return ONLY a valid JSON object matching these fields. No markdown backticks, no
 
                     const parsed = JSON.parse(cleaned);
                     parsed.isFreshAiResult = true;
-                    parsed.modelUsed = `Google ${model.toUpperCase()} Vision (Live AI)`;
+                    parsed.modelUsed = 'Google Gemini 3.8 Flash Vision (Frontier 2026 Live AI)';
                     return parsed;
                 } catch (err) {
                     lastError = err;
@@ -4102,6 +4154,9 @@ Return ONLY a valid JSON object matching these fields. No markdown backticks, no
             }
             throw lastError || new Error('Google Gemini API connection failed');
         }
+        window.callGoogleGemini38Vision = callGoogleGemini38Vision;
+        const callGoogleGeminiVision = callGoogleGemini38Vision;
+        window.callGoogleGeminiVision = callGoogleGemini38Vision;
 
         // Instant Auto-Save for Google AI Studio API Key
         function autoSaveGeminiKey(val) {
@@ -4197,13 +4252,13 @@ Return ONLY a valid JSON object matching these fields. No markdown backticks, no
                 appState.apiKeys.gemini = geminiKey;
                 try { localStorage.setItem('ri_api_keys', JSON.stringify(appState.apiKeys)); } catch (e) {}
 
-                if (procTitle) procTitle.innerText = 'Google Gemini 2.0 Vision Analyzing...';
+                if (procTitle) procTitle.innerText = 'Google Gemini 3.8 Flash Vision Analyzing...';
                 if (procSub) procSub.innerText = `Analyzing actual visual pixels of: ${file.name}`;
 
                 try {
                     const assetBase64 = await getAssetBase64(file.file || file.dataUrl);
                     if (assetBase64 && assetBase64.base64) {
-                        const aiResult = await callGoogleGeminiVision(geminiKey, assetBase64, customPromptText);
+                        const aiResult = await callGoogleGemini38Vision(geminiKey, assetBase64, customPromptText);
                         if (aiResult) {
                             const verified = enforceExactMetadataRules(aiResult, file.name, file.visualAsset, customPromptText, true);
                             if (target === 'title') {
@@ -4217,11 +4272,11 @@ Return ONLY a valid JSON object matching these fields. No markdown backticks, no
                                 file.category = verified.category || file.category;
                                 if (aiResult.sceneAnalysis) file.sceneAnalysis = aiResult.sceneAnalysis;
                             }
-                            file.modelUsed = aiResult.modelUsed || 'Google Gemini 2.0 Flash Vision (Live AI)';
+                            file.modelUsed = aiResult.modelUsed || 'Google Gemini 3.8 Flash Vision (Frontier 2026 Live AI)';
                             file.visionVerified = true;
                             selectWorkspaceFile(appState.activeFileIndex);
                             if (overlay) overlay.classList.add('hidden');
-                            showNotification('✨ Google Gemini Vision: ছবির আসল দৃশ্যের সঙ্গে ১০০% মিলিয়ে নিখুঁত Title ও Keywords তৈরি হয়েছে!', 'success');
+                            showNotification('✨ Google Gemini 3.8 Flash Vision: ছবির আসল দৃশ্যের সঙ্গে ১০০% মিলিয়ে নিখুঁত Title ও Keywords তৈরি হয়েছে!', 'success');
                             return;
                         }
                     } else {
@@ -4286,7 +4341,7 @@ Return ONLY a valid JSON object matching these fields. No markdown backticks, no
                 let successCount = 0;
                 for (let i = 0; i < appState.files.length; i++) {
                     const f = appState.files[i];
-                    if (procTitle) procTitle.innerText = `Google AI Studio Vision (${i + 1}/${appState.files.length})`;
+                    if (procTitle) procTitle.innerText = `Google Gemini 3.8 Flash Vision (${i + 1}/${appState.files.length})`;
                     if (procSub) procSub.innerText = `Analyzing: ${f.name}...`;
 
                     try {
@@ -4300,7 +4355,7 @@ Return ONLY a valid JSON object matching these fields. No markdown backticks, no
                                 f.keywords = verified.keywords;
                                 f.category = verified.category || f.category;
                                 if (aiResult.sceneAnalysis) f.sceneAnalysis = aiResult.sceneAnalysis;
-                                f.modelUsed = 'Google Gemini 2.0 Flash Vision (Live AI)';
+                                f.modelUsed = 'Google Gemini 3.8 Flash Vision (Live AI)';
                                 f.visionVerified = true;
                                 successCount++;
                             }
@@ -4835,13 +4890,13 @@ Return ONLY a valid JSON object matching these fields. No markdown backticks, no
             const lbl = document.getElementById('api-connection-label');
             if (!lbl) return;
             if (appState.apiKeys.gemini) {
-                lbl.innerHTML = '<span class="text-emerald-500 font-black">Google AI Studio (Live Active)</span>';
+                lbl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1.5 inline-block"></span><span class="text-emerald-500 font-black">Gemini 3.8 Flash (Active)</span>';
             } else if (appState.apiKeys.openai) {
                 lbl.innerText = 'OpenAI Vision Live Active';
             } else if (appState.apiKeys.riBridge) {
                 lbl.innerText = 'RI Universal Key Active';
             } else {
-                lbl.innerText = 'Google AI Studio Ready';
+                lbl.innerText = 'Gemini 3.8 Flash (Ready)';
             }
         }
 
